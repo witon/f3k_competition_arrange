@@ -8,6 +8,7 @@ import io
 import getopt
 import string
 import math
+import rounds_competitors_draw
 from common import get_output_file, get_competitors_from_input
 
 input_file_path = ''
@@ -15,9 +16,9 @@ output_file_path = ''
 flight_num = 0
 round_num = 0
 
-def rounds_competitors_draw(competitors, flight_num):
-    i = itertools.combinations(competitors, flight_num)
-    return list(i)
+#def rounds_competitors_draw(competitors, flight_num):
+#    i = itertools.combinations(competitors, flight_num)
+#    return list(i)
 
 def print_help():
     print(sys.argv[0] + ' -i <inputfile> -o <outputfile> -n <flight num> -r <round num>')
@@ -50,28 +51,25 @@ def parse_argv(argv):
     return True
 
 
-def write_to_output(rounds_competitors, all_competitors):
+def write_to_output(rounds):
     global output_file_path
     global round_num
     output_file = get_output_file(output_file_path)
-    competitors_set = set(all_competitors)
-    loop_count = math.ceil(round_num / len(rounds_competitors))
-    count = 0
-    for i in range(loop_count):
-        for round_competitors in rounds_competitors:
-            for competitor in round_competitors:
+
+    round_index = 1
+    for round in rounds:
+        group_index = 1
+        for group in round:
+            output_file.write(str(round_index))
+            output_file.write(".")
+            output_file.write(str(group_index))
+            output_file.write("|")
+            for competitor in group:
                 output_file.write(competitor)
                 output_file.write("|")
-            output_file.write("\t")
-            round_assistants = list(competitors_set - set(round_competitors))
-            for assistant in round_assistants:
-                output_file.write(assistant)
-                output_file.write("|")
             output_file.write("\n")
-            count = count + 1
-            if count >= round_num:
-                i = loop_count + 1
-                break
+            group_index = group_index + 1
+        round_index = round_index + 1
     if not output_file_path == "" :
         output_file.close()
 
@@ -83,9 +81,14 @@ def main(argv):
     global input_file_path
     competitors = get_competitors_from_input(input_file_path)
     global flight_num
-    rounds_competitors = rounds_competitors_draw(competitors, flight_num)
-    random.shuffle(rounds_competitors)
-    write_to_output(rounds_competitors, competitors)
+    draw = rounds_competitors_draw.RoundsCompetitorsDraw()
+    random.shuffle(competitors)
+    draw.set_competitors(competitors)
+    total_pilot_num = len(competitors)
+    groups_pilot_num = [flight_num, total_pilot_num - flight_num]
+    draw.set_groups_pilot_num(groups_pilot_num)
+    rounds = draw.draw(round_num)
+    write_to_output(rounds)
 
 
 if __name__ == '__main__':
